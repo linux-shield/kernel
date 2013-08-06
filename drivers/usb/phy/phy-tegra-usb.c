@@ -156,6 +156,11 @@
 #define   USB_USBMODE_HOST		(3 << 0)
 #define   USB_USBMODE_DEVICE		(2 << 0)
 
+#define USB_PHY_WAKEUP 0x408
+#define   USB_ID_INT_EN			(1<<0)
+#define   USB_ID_CHG_DET			(1<<1)
+#define   USB_ID_STS			(1<<2)
+
 static DEFINE_SPINLOCK(utmip_pad_lock);
 static int utmip_pad_count;
 
@@ -240,6 +245,22 @@ static void set_phcd(struct tegra_usb_phy *phy, bool enable)
 		else
 			val &= ~TEGRA_USB_PORTSC1_PHCD;
 		writel(val, base + TEGRA_USB_PORTSC1);
+	}
+}
+
+static void tegra_usb_update_vbus(struct tegra_usb_phy *tegra_phy) {
+	if (IS_ERR(tegra_phy->vbus))
+		return;
+
+	if (tegra_phy->otg_id && tegra_phy->otg_vbus_enabled) {
+		dev_notice(tegra_phy->u_phy.dev, "switching vbus to device mode\n");
+		tegra_phy->otg_vbus_enabled = false;
+		regulator_disable(tegra_phy->vbus);
+	} else if (!tegra_phy->otg_id && !tegra_phy->otg_vbus_enabled) {
+		dev_notice(tegra_phy->u_phy.dev, "switching vbus to host mode\n");
+		if (regulator_enable(tegra_phy->vbus))
+			dev_err(tegra_phy->u_phy.dev, "enabling vbus failed\n");
+		tegra_phy->otg_vbus_enabled = true;
 	}
 }
 
@@ -515,6 +536,13 @@ static int utmi_phy_power_on(struct tegra_usb_phy *phy)
 	if (!phy->is_legacy_phy)
 		set_pts(phy, 0);
 
+	if (phy->mode == USB_DR_MODE_OTG) {
+		val = readl(base + USB_PHY_WAKEUP);
+		val |= USB_ID_INT_EN;
+		writel(val, base + USB_PHY_WAKEUP);
+		udelay(1);
+	}
+
 	return 0;
 }
 
@@ -784,12 +812,16 @@ static int tegra_usb_phy_init(struct tegra_usb_phy *phy)
 	}
 
 	if (!IS_ERR(phy->vbus)) {
-		err = regulator_enable(phy->vbus);
-		if (err) {
-			dev_err(phy->u_phy.dev,
-				"failed to enable usb vbus regulator: %d\n",
-				err);
-			goto fail;
+		if (phy->mode == USB_DR_MODE_HOST) {
+			err = regulator_enable(phy->vbus);
+			if (err) {
+				dev_err(phy->u_phy.dev,
+					"failed to enable usb vbus regulator: %d\n",
+					err);
+				goto fail;
+			}
+		} else if (phy->mode == USB_DR_MODE_OTG) {
+			tegra_usb_update_vbus(phy);
 		}
 	}
 
@@ -856,12 +888,53 @@ static int read_utmi_param(struct platform_device *pdev, const char *param,
 	return err;
 }
 
+static irqreturn_t otg_irq(int irq, void *data)
+{
+
+	struct tegra_usb_phy *tegra_phy = data;
+	int val;
+
+	val = readl(tegra_phy->regs + USB_PHY_WAKEUP);
+	if (val & USB_ID_INT_EN) {
+		writel(val, tegra_phy->regs + USB_PHY_WAKEUP);
+		if (val & USB_ID_CHG_DET) {
+			tegra_phy->otg_id = val & USB_ID_STS;
+			schedule_work(&tegra_phy->otg_work);
+		}
+	}
+
+	return IRQ_HANDLED;
+}
+
+static void otg_irq_work(struct work_struct *work) {
+	struct tegra_usb_phy *tegra_phy = container_of(work, struct tegra_usb_phy,
+						       otg_work);
+
+	tegra_usb_update_vbus(tegra_phy);
+}
+
 static int utmi_phy_probe(struct tegra_usb_phy *tegra_phy,
 			  struct platform_device *pdev)
 {
 	struct resource *res;
 	int err;
+	int irq;
 	struct tegra_utmip_config *config;
+
+	if (tegra_phy->mode == USB_DR_MODE_OTG) {
+		tegra_phy->otg_vbus_enabled = false;
+		tegra_phy->otg_id = 4;
+
+		irq = platform_get_irq(pdev, 0);
+		err = devm_request_threaded_irq(&pdev->dev, irq, otg_irq, NULL,
+						IRQF_SHARED,
+						"tegra-usb-otg", tegra_phy);
+		if (err) {
+			dev_err(&pdev->dev, "OTG irq request failed: %d\n", err);
+		}
+
+		INIT_WORK(&tegra_phy->otg_work, otg_irq_work);
+	}
 
 	tegra_phy->is_ulpi_phy = false;
 
@@ -1007,6 +1080,16 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
 	tegra_phy->is_legacy_phy =
 		of_property_read_bool(np, "nvidia,has-legacy-mode");
 
+	if (of_find_property(np, "dr_mode", NULL))
+		tegra_phy->mode = of_usb_get_dr_mode(np);
+	else
+		tegra_phy->mode = USB_DR_MODE_HOST;
+
+	if (tegra_phy->mode == USB_DR_MODE_UNKNOWN) {
+		dev_err(&pdev->dev, "dr_mode is invalid\n");
+		return -EINVAL;
+	}
+
 	phy_type = of_usb_get_phy_mode(np);
 	switch (phy_type) {
 	case USBPHY_INTERFACE_MODE_UTMI:
@@ -1030,16 +1113,6 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
 
 	default:
 		dev_err(&pdev->dev, "phy_type is invalid or unsupported\n");
-		return -EINVAL;
-	}
-
-	if (of_find_property(np, "dr_mode", NULL))
-		tegra_phy->mode = of_usb_get_dr_mode(np);
-	else
-		tegra_phy->mode = USB_DR_MODE_HOST;
-
-	if (tegra_phy->mode == USB_DR_MODE_UNKNOWN) {
-		dev_err(&pdev->dev, "dr_mode is invalid\n");
 		return -EINVAL;
 	}
 
