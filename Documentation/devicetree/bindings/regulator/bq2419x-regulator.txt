@@ -1,0 +1,44 @@
+TI BQ24190/BQ24192/BQ24192i/BQ24193 charger regulator driver.
+
+Required properties:
+- compatible: must be "ti,bq2419x".
+- reg: I2C slave address of the regulator. It should be 0x1b.
+- interrupts: Interrupt number to generate interrupt from device.
+
+Optional properties:
+- ti,watchdog-timeout: Watchdog timer period. 0 means watchdog timer disable.
+- ti,maximum-in-voltage-limit: Maximum input voltage (mV) for charger.
+- ti,fast-charge-current-limit: Maximum fast charge current (mA) limit.
+- otg-iusb-gpio: GPIO number for the OTG boost mode.
+
+
+Any standard regulator properties can be used to configure the VBUS and charging regulator.
+The driver supports two regualtors:
+vbus regulator for vbus supply from device. This is voltage regulator.
+charger regualtor for chargign battery. This is current regulator.
+
+Example:
+
+       bq2419x {
+               compatible = "ti,bq2419x";
+               reg = <0x6b>;
+               interrupts = <120 IRQ_TYPE_LEVEL_HIGH>;
+               ti,watchdog-timeout = <40>;
+               ti,maximum-in-voltage-limit = <4200>;
+               ti,fast-charge-current-limit = <2500>;
+               otg-iusb-gpio = <&gpio 130 GPIO_ACTIVE_HIGH>;
+
+               regulators {
+                       vbus {
+                               regulator-name = "vbus";
+                               regulator-min-microvolt = <0>;
+                               regulator-max-microvolt = <5000000>;
+                       };
+
+                       charger {
+                               regulator-name = "charger";
+                               regulator-min-microamp = <100000>;
+                               regulator-max-microamp = <2000000>;
+                       };
+               };
+       };
