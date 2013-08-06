@@ -16,3 +16,7 @@ First, built the ramdisk file by issuing `make`. This will create a `ramdisk.img
 Feedback and contact
 --------------------
 Alexandre Courbot <gnurou@gmail.com>
+
+Source release
+--------------
+This binary release uses an unmodified version of Busybox, which source code can be downloaded at https://github.com/Gnurou/busybox. User-space is built from the `examples/bootfloppy` directory with slight modifications to use `mdev` and mount filesystems.
