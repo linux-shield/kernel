@@ -75,6 +75,9 @@ struct tegra_usb_phy {
 	bool is_legacy_phy;
 	bool is_ulpi_phy;
 	int reset_gpio;
+	int otg_id;
+	bool otg_vbus_enabled;
+	struct work_struct otg_work;
 };
 
 void tegra_usb_phy_preresume(struct usb_phy *phy);
