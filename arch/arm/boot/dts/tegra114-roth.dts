@@ -790,10 +790,28 @@
 		clock-frequency = <100000>;
 
 		charger@6b {
-			compatible = "ti,bq24193";
+			compatible = "ti,bq2419x";
 			reg = <0x6b>;
 			interrupt-parent = <&gpio>;
 			interrupts = <TEGRA_GPIO(J, 0) GPIO_ACTIVE_HIGH>;
+			ti,watchdog-timeout = <40>;
+			ti,maximum-in-voltage-limit = <4200>;
+			ti,fast-charge-current-limit = <2500>;
+			otg-usb-gpio = <&gpio TEGRA_GPIO(I, 4) GPIO_ACTIVE_HIGH>;
+
+			regulators {
+				usb_vbus: vbus {
+					regulator-name = "vbus";
+					regulator-min-microvolt = <0>;
+					regulator-max-microvolt = <5000000>;
+				};
+
+				charger {
+					regulator-name = "charger";
+					regulator-min-microamp = <100000>;
+					regulator-max-microamp = <2000000>;
+				};
+			};
 		};
 	};
 
@@ -1008,9 +1026,8 @@
 		nvidia,xcvr-lsfslew = <2>;
 		nvidia,xcvr-lsrslew = <2>;
 		interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
-		/* Should be changed to "otg" once we have vbus_supply */
-		/* As of now, USB devices need to be powered externally */
-		dr_mode = "host";
+		dr_mode = "otg";
+		vbus-supply = <&usb_vbus>;
 	};
 
 	/* SHIELD controller */
