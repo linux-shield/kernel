@@ -4198,7 +4198,7 @@ struct brcmf_sdio *brcmf_sdio_probe(struct brcmf_sdio_dev *sdiodev)
 
 	/* ...and initialize clock/power states */
 	bus->clkstate = CLK_SDONLY;
-	bus->idletime = BRCMF_IDLE_INTERVAL;
+	bus->idletime = BRCMF_IDLE_ACTIVE;
 	bus->idleclock = BRCMF_IDLE_ACTIVE;
 
 	/* SR state */
