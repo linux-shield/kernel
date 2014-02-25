@@ -100,7 +100,6 @@ itt5ga1=0x3e
 tempthresh=120
 otpimagesize=232
 usbepnum=0x2
-muxenab=0x10
 noisecaloffset=14
 noisecaloffset5g=14
 rssicorrnorm_core0=0x2004
