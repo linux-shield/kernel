@@ -972,6 +972,15 @@
 		nvidia,invert-interrupt;
 	};
 
+	/* Wifi */
+	sdhci@78000000 {
+		status = "okay";
+		bus-width = <4>;
+		broken-cd;
+		keep-power-in-suspend;
+		cap-sdio-irq;
+	};
+
 	/* SD card */
 	sdhci@78000400 {
 		status = "okay";
