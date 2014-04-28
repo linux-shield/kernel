@@ -56,6 +56,18 @@
 		status = "okay";
 	};
 
+	i2c@7000c000 {
+		status = "okay";
+		clock-frequency = <100000>;
+
+		battery-charger@6b {
+			compatible = "ti,bq24192";
+			reg = <0x6b>;
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(J, 0) GPIO_ACTIVE_HIGH>;
+		};
+	};
+
 	i2c@7000d000 {
 		status = "okay";
 		clock-frequency = <400000>;
