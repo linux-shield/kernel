@@ -1515,12 +1515,16 @@ static SIMPLE_DEV_PM_OPS(bq24190_pm_ops, bq24190_pm_suspend, bq24190_pm_resume);
  */
 static const struct i2c_device_id bq24190_i2c_ids[] = {
 	{ "bq24190", BQ24190_REG_VPRS_PN_24190 },
+	{ "bq24192", BQ24190_REG_VPRS_PN_24192 },
+	{ "bq24193", BQ24190_REG_VPRS_PN_24192 },
 	{ },
 };
 
 #ifdef CONFIG_OF
 static const struct of_device_id bq24190_of_match[] = {
 	{ .compatible = "ti,bq24190", },
+	{ .compatible = "ti,bq24192", },
+	{ .compatible = "ti,bq24193", },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, bq24190_of_match);
