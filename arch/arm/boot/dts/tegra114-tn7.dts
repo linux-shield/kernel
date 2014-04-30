@@ -32,6 +32,46 @@
 		reg = <0x80000000 0x37e00000>;
 	};
 
+	pinmux@70000868 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&state_default>;
+
+		state_default: pinmux {
+			sdmmc3_clk_pa6 {
+				nvidia,pins = "sdmmc3_clk_pa6";
+				nvidia,function = "sdmmc3";
+				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
+				nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+			};
+			sdmmc3_cmd_pa7 {
+				nvidia,pins = "sdmmc3_cmd_pa7",
+						"sdmmc3_dat0_pb7",
+						"sdmmc3_dat1_pb6",
+						"sdmmc3_dat2_pb5",
+						"sdmmc3_dat3_pb4",
+						"sdmmc3_cd_n_pv2",
+						"sdmmc3_clk_lb_out_pee4",
+						"sdmmc3_clk_lb_in_pee5",
+						"kb_col4_pq4";
+				nvidia,function = "sdmmc3";
+				nvidia,pull = <TEGRA_PIN_PULL_UP>;
+				nvidia,tristate = <TEGRA_PIN_DISABLE>;
+				nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+			};
+
+			drive_sdio3 {
+				nvidia,pins = "drive_sdio3";
+				nvidia,high-speed-mode = <TEGRA_PIN_ENABLE>;
+				nvidia,schmitt = <TEGRA_PIN_DISABLE>;
+				nvidia,pull-down-strength = <36>;
+				nvidia,pull-up-strength = <20>;
+				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_FASTEST>;
+				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_FASTEST>;
+			};
+		};
+	};
+
 	host1x@50000000 {
 		dsi@54300000 {
 			status = "okay";
@@ -217,7 +257,7 @@
 						regulator-boot-on;
 					};
 
-					ldo9 {
+					vi_sdcard: ldo9 {
 						regulator-name = "vi-sdcard";
 						regulator-min-microvolt = <2900000>;
 						regulator-max-microvolt = <2900000>;
@@ -250,6 +290,15 @@
 
 	pmc@7000e400 {
 		nvidia,invert-interrupt;
+	};
+
+	/* SD card */
+	sdhci@78000400 {
+		status = "okay";
+		bus-width = <4>;
+		vmmc-supply = <&vi_sdcard>;
+		cd-gpios = <&gpio TEGRA_GPIO(V, 2) GPIO_ACTIVE_LOW>;
+		power-gpios = <&gpio TEGRA_GPIO(K, 1) GPIO_ACTIVE_HIGH>;
 	};
 
 	/* eMMC */
