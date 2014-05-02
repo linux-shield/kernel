@@ -73,6 +73,18 @@
 	};
 
 	host1x@50000000 {
+		hdmi@54280000 {
+			status = "okay";
+
+			hdmi-supply = <&vdd_5v0_hdmi>;
+			vdd-supply = <&vdd_3v3_hdmi>;
+			pll-supply = <&vdd_1v05_pll>;
+
+			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
+			nvidia,hpd-gpio =
+				<&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
+		};
+
 		dsi@54300000 {
 			status = "okay";
 
@@ -106,6 +118,11 @@
 			interrupt-parent = <&gpio>;
 			interrupts = <TEGRA_GPIO(J, 0) GPIO_ACTIVE_HIGH>;
 		};
+	};
+
+	hdmi_ddc: i2c@7000c700 {
+		status = "okay";
+		clock-frequency = <100000>;
 	};
 
 	i2c@7000d000 {
@@ -198,7 +215,7 @@
 						regulator-boot-on;
 					};
 
-					ldo1 {
+					vdd_1v05_pll: ldo1 {
 						regulator-name = "va-pllx";
 						regulator-min-microvolt = <1050000>;
 						regulator-max-microvolt = <1050000>;
@@ -271,7 +288,7 @@
 						regulator-boot-on;
 					};
 
-					ldoln {
+					vdd_3v3_hdmi: ldoln {
 						regulator-name = "va-hdmi";
 						regulator-min-microvolt = <3300000>;
 						regulator-max-microvolt = <3300000>;
@@ -406,6 +423,20 @@
 			gpio = <&palmas_gpio 4 GPIO_ACTIVE_HIGH>;
 			enable-active-high;
 			vin-supply = <&vdd_1v8>;
+			regulator-boot-on;
+		};
+
+		vdd_5v0_hdmi: regulator@3 {
+			compatible = "regulator-fixed";
+			reg = <3>;
+			regulator-name = "VDD_5V_HDMI_CONN";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			gpio = <&gpio TEGRA_GPIO(K, 6) GPIO_ACTIVE_HIGH>;
+			enable-active-high;
+			gpio-open-drain;
+			vin-supply = <&vdd_smps10_out1>;
+			regulator-always-on;
 			regulator-boot-on;
 		};
 	};
