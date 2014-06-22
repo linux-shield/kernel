@@ -1119,6 +1119,7 @@
 			vin-supply = <&vdd_1v8>;
 			enable-active-high;
 			gpio = <&gpio TEGRA_GPIO(X, 1) GPIO_ACTIVE_HIGH>;
+			regulator-always-on;
 			regulator-boot-on;
 		};
 
