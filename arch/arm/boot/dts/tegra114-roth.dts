@@ -972,6 +972,11 @@
 		nvidia,invert-interrupt;
 	};
 
+	sdhci0_pwrseq: sdhci0_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&gpio TEGRA_GPIO(CC, 5) GPIO_ACTIVE_LOW>;
+	};
+
 	/* Wifi */
 	sdhci@78000000 {
 		status = "okay";
@@ -979,6 +984,9 @@
 		broken-cd;
 		keep-power-in-suspend;
 		cap-sdio-irq;
+
+		mmc-pwrseq = <&sdhci0_pwrseq>;
+
 	};
 
 	/* SD card */
