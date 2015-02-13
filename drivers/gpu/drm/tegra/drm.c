@@ -1039,10 +1039,7 @@ static const struct of_device_id host1x_drm_subdevs[] = {
 };
 
 static struct host1x_driver host1x_drm_driver = {
-	.driver = {
-		.name = "drm",
-		.pm = &host1x_drm_pm_ops,
-	},
+	.name = "drm",
 	.probe = host1x_drm_probe,
 	.remove = host1x_drm_remove,
 	.subdevs = host1x_drm_subdevs,
